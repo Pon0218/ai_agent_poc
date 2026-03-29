@@ -22,6 +22,6 @@ async def generate_questions(
     result = question_service.generate_questions(session_id)
     return BaseAPIResponse(
         success=True,
-        data=result.dict(),
+        data=result.model_dump(),
     )
 

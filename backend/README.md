@@ -1,17 +1,25 @@
-## AI Agent Workflow Backend (FastAPI)
+## AI Agent Backend (FastAPI)
 
-本專案是一個使用 **FastAPI** 實作的後端服務，提供「workflow 型 AI Agent」的 MVP 版本。
-目前所有 AI 行為皆為 **mock**，未實際呼叫 LLM，但已預留 `llm_service` 方便日後接上 OpenAI 或其他模型。
+本專案使用 **FastAPI** 實作後端，**目前正式對外流程為兩步驟**：
+
+1. **用戶輸入**：產品名稱、產品網址、產品敘述（建立 Session）
+2. **LLM**：依 Session 內產品資訊**一次**產出 **SWOT 分析**，以 **Markdown 字串**回傳
+
+> 這不是「多輪一問一答」流程；若之後要問答＋報告，可使用下方「預留擴充 API」。
+
+SWOT 會透過 **OpenAI API** 產生，需在 `.env` 設定 `OPENAI_API_KEY`（並於 OpenAI 帳戶啟用計費／額度）。
 
 ---
 
-### 專案功能簡述
+### 專案功能簡述（目前主流程）
 
-- **建立分析任務 Session**：接收產品資訊並建立一筆分析任務。
-- **產生追問問題**：依產品資訊產生產品摘要與一組追問問題（目前為 mock）。
-- **接收使用者回答**：儲存使用者針對問題的回答。
-- **產出結構化報告**：根據原始產品資料與使用者回答，產生一份結構化報告（目前為 mock）。
-- **Health Check**：簡單回傳服務狀態。
+| 步驟 | 說明 |
+|------|------|
+| 建立 Session | `POST /sessions` 接收產品名稱、網址、敘述 |
+| 產生 SWOT | `POST /sessions/{session_id}/swot/generate` 呼叫 LLM，回傳 `swot_markdown`（Markdown） |
+| Health | `GET /health` 檢查服務是否正常 |
+
+**預留擴充**（程式仍存在，可暫不串接）：產生追問問題、提交回答、產生結構化報告（部分仍為 mock）。
 
 ---
 
@@ -22,31 +30,68 @@ backend/
   app/
     main.py                  # FastAPI 入口，註冊所有 router
     routes/
-      health.py              # 健康檢查 API
-      session.py             # 建立分析任務 Session 的 API
-      question.py            # 產生追問問題的 API
-      answer.py              # 接收回答的 API
-      report.py              # 產生報告的 API
+      health.py
+      session.py             # POST /sessions
+      swot.py                # POST /sessions/{id}/swot/generate（主流程）
+      question.py            # （預留）追問問題
+      answer.py              # （預留）回答
+      report.py              # （預留）報告
     schemas/
-      session.py             # Session 相關 Pydantic 模型
-      question.py            # 問題產生回應模型
-      answer.py              # 回答提交請求/回應模型
-      report.py              # 報告回應模型
-      common.py              # 共用枚舉、通用回應格式等
+      session.py, swot.py, common.py, ...
     services/
-      session_service.py     # Session 生命週期商業邏輯
-      question_service.py    # 問題產生流程
-      answer_service.py      # 回答儲存流程
-      report_service.py      # 報告產生流程
-      llm_service.py         # 預留 LLM 介面，目前為 mock
+      session_service.py, swot_service.py, llm_service.py（含 OpenAI SWOT）, ...
     core/
-      config.py              # 設定與環境變數管理
+      config.py              # .env / OPENAI_API_KEY
     storage/
-      memory_store.py        # In-memory 存儲實作（Session / 問題 / 回答 / 報告）
+      memory_store.py
+  Dockerfile                 # 映像建置（請在 backend 目錄 docker build .）
   requirements.txt
   .env.example
   README.md
 ```
+
+**Docker**：`Dockerfile` 放在 `backend/` 根目錄，建置時 **working directory 必須是 `backend`**。
+
+- 本機建映像前請先 **啟動 Docker Desktop**（否則會出現 `dockerDesktopLinuxEngine` / 無法連線錯誤）。
+- 測試 API 請用 **http://localhost:8000/docs** 或 **http://127.0.0.1:8000**，**勿**在瀏覽器網址列輸入 `0.0.0.0`（會顯示無效位址）。
+
+本機建置並執行（僅本機 tag）：
+
+```bash
+cd backend
+docker build -t ai-agent-backend .
+docker run -p 8080:8080 --rm ai-agent-backend
+```
+
+本機建置並推上 **Artifact Registry**（映像檔名與標籤可自訂，範例與常見設定一致）：
+
+```bash
+cd backend
+gcloud config set project YOUR_PROJECT_ID
+gcloud auth configure-docker REGION-docker.pkg.dev
+
+docker build -t REGION-docker.pkg.dev/YOUR_PROJECT_ID/REPOSITORY_NAME/ai_agent_poc:v0.1.0 .
+docker push REGION-docker.pkg.dev/YOUR_PROJECT_ID/REPOSITORY_NAME/ai_agent_poc:v0.1.0
+```
+
+將 `REGION`（例如 `us-central1`）、`YOUR_PROJECT_ID`、`REPOSITORY_NAME`（Artifact Registry **存放區名稱**，例如 `aiagentpoc`）換成你的值。完整路徑格式為：`區域-docker.pkg.dev/專案ID/存放區/映像檔名稱:標籤`。
+
+**Cloud Run 部署**（擇一）：
+
+1. **從映像檔部署**（已 push 至 Artifact Registry 時）：
+
+   ```bash
+   gcloud run deploy YOUR_SERVICE_NAME \
+     --image REGION-docker.pkg.dev/YOUR_PROJECT_ID/REPOSITORY_NAME/ai_agent_poc:v0.1.0 \
+     --region REGION \
+     --allow-unauthenticated \
+     --port 8080
+   ```
+
+   建議 **Cloud Run 區域** 與 **Artifact Registry 區域** 相同（例如皆為 `us-central1`），並在服務的「變數與密碼」設定 `OPENAI_API_KEY` 等（容器內沒有本機 `.env`）。
+
+2. **從原始碼部署**（由 GCP 在雲端建置）：在 monorepo 根目錄執行  
+   `gcloud run deploy ... --source ./backend`（會使用 `backend/Dockerfile`）。
 
 ---
 
@@ -58,96 +103,70 @@ backend/
 cd backend
 ```
 
-2. 建議建立並啟用虛擬環境（可選）
-
-```bash
-python -m venv .venv
-.\.venv\Scripts\activate
-```
-
-3. 安裝相依套件
+2. 安裝相依套件（pip 或 Poetry 擇一）
 
 ```bash
 pip install -r requirements.txt
+# 或
+poetry install
 ```
 
-4. 建立環境設定檔
+3. 建立環境設定檔
 
 ```bash
-copy .env.example .env  # Windows PowerShell 可用：Copy-Item .env.example .env
+copy .env.example .env   # Windows：Copy-Item .env.example .env
+```
+
+在 `.env` 填入至少：
+
+```env
+OPENAI_API_KEY=你的_OpenAI_API_Key
 ```
 
 ---
 
 ### 啟動方式
 
-在 `backend` 目錄下執行：
+在 `backend` 目錄下：
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 或
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-啟動後預設服務位於：
-
-- API 根路徑：`http://localhost:8000`
-- OpenAPI 文件：`http://localhost:8000/docs`
+- API：`http://localhost:8000`
+- Swagger：`http://localhost:8000/docs`
 
 ---
 
-### API 概觀與回應格式
+### API 回應格式
 
-除了 `GET /health` 以外，主要業務 API 皆採用統一回傳格式：
+除 `GET /health` 外，多數業務 API 使用：
 
 ```json
 {
   "success": true,
-  "data": { ...實際 payload... },
+  "data": { },
   "error": null,
-  "meta": {
-    "message": "optional message"
-  }
+  "meta": null
 }
 ```
 
-若發生錯誤（例如 Session 不存在），則會回傳 FastAPI 的預設錯誤結構，例如：
-
-```json
-{
-  "detail": "Session sess_000001 不存在"
-}
-```
+錯誤時常見為 `{"detail": "..."}`。
 
 ---
 
-### API 詳細說明與測試方式
-
-以下範例皆以 `http://localhost:8000` 為基底網址，可使用：
-- `curl`
-- Postman
-- Insomnia
-- 或直接在 `http://localhost:8000/docs` 透過 Swagger UI 測試。
+### 主流程：API 測試（建議照順序）
 
 #### 1. Health Check
 
-- **Method**: `GET`
-- **URL**: `/health`
+- `GET /health` → `{"status":"ok"}`
 
-**範例回應**
+#### 2. 建立 Session（用戶輸入產品資訊）
 
-```json
-{
-  "status": "ok"
-}
-```
-
----
-
-#### 2. 建立分析任務 Session
-
-- **Method**: `POST`
-- **URL**: `/sessions`
-
-**Request Body 範例**
+- **POST** `/sessions`
+- Body：
 
 ```json
 {
@@ -157,27 +176,12 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 }
 ```
 
-**成功回應範例**
+- 回傳中取得 `data.session_id`（例如 `sess_000001`）。
 
-```json
-{
-  "success": true,
-  "data": {
-    "session_id": "sess_000001",
-    "status": "created",
-    "message": "分析任務已建立"
-  },
-  "error": null,
-  "meta": null
-}
-```
+#### 3. 產生 SWOT（Markdown）
 
----
-
-#### 3. 產生追問問題
-
-- **Method**: `POST`
-- **URL**: `/sessions/{session_id}/questions/generate`
+- **POST** `/sessions/{session_id}/swot/generate`（**無 request body**）
+- 後端會用該 Session 已存的產品資訊呼叫 OpenAI，一次回傳 SWOT。
 
 **成功回應範例**
 
@@ -186,161 +190,43 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   "success": true,
   "data": {
     "session_id": "sess_000001",
-    "status": "questions_generated",
-    "product_summary": "此產品為智慧設備，主打遠端控制與監控功能。",
-    "questions": [
-      {
-        "question_id": "q_001",
-        "question_text": "目前主要銷售市場是哪裡？",
-        "question_type": "text",
-        "required": true
-      },
-      {
-        "question_id": "q_002",
-        "question_text": "產品售價區間大約是多少？",
-        "question_type": "text",
-        "required": true
-      },
-      {
-        "question_id": "q_003",
-        "question_text": "目標客群是 B2B 還是 B2C？",
-        "question_type": "single_select",
-        "required": true,
-        "options": ["B2B", "B2C", "Both"]
-      }
-    ]
+    "status": "swot_generated",
+    "swot_markdown": "## Strengths\n- ...\n\n## Weaknesses\n- ...\n\n## Opportunities\n- ...\n\n## Threats\n- ..."
   },
   "error": null,
   "meta": null
 }
 ```
 
-若 `session_id` 不存在，會回傳 404：
+前端將 `data.swot_markdown` 當 Markdown 渲染即可。
 
-```json
-{
-  "detail": "Session sess_xxx 不存在"
-}
-```
+- 若 `OPENAI_API_KEY` 未設定或 LLM 失敗，會回傳對應 HTTP 錯誤與 `detail` 說明。
 
 ---
 
-#### 4. 提交回答
+### 預留擴充：多步驟問答＋報告（與 README 舊版相同）
 
-- **Method**: `POST`
-- **URL**: `/sessions/{session_id}/answers`
+以下 API 仍存在，**非目前主流程**；行為與狀態機與「兩步驟 SWOT」獨立，可依產品規劃再串接。
 
-**Request Body 範例**
+| API | 說明 |
+|-----|------|
+| `POST /sessions/{session_id}/questions/generate` | mock 產生追問問題 |
+| `POST /sessions/{session_id}/answers` | 提交多題回答 |
+| `POST /sessions/{session_id}/report/generate` | mock 產生結構化報告 |
 
-```json
-{
-  "answers": [
-    {
-      "question_id": "q_001",
-      "answer_text": "台灣、日本、美國"
-    },
-    {
-      "question_id": "q_002",
-      "answer_text": "120-150 USD"
-    },
-    {
-      "question_id": "q_003",
-      "answer_text": "B2C"
-    }
-  ]
-}
-```
-
-**成功回應範例**
-
-```json
-{
-  "success": true,
-  "data": {
-    "session_id": "sess_000001",
-    "status": "answers_submitted",
-    "message": "回答已儲存"
-  },
-  "error": null,
-  "meta": null
-}
-```
-
-若尚未產生問題就提交回答，會得到 400：
-
-```json
-{
-  "detail": "目前狀態不允許提交回答，請先產生問題"
-}
-```
+`Session` 狀態另包含：`swot_generated`（SWOT 流程）、以及問答流程用的 `questions_generated`、`answers_submitted`、`report_generated`、`failed` 等。
 
 ---
 
-#### 5. 產生報告
+### 部署（Cloud Run 等）
 
-- **Method**: `POST`
-- **URL**: `/sessions/{session_id}/report/generate`
-
-**成功回應範例**
-
-```json
-{
-  "success": true,
-  "data": {
-    "session_id": "sess_000001",
-    "status": "report_generated",
-    "report": {
-      "summary": "本產品屬於智慧設備，具備遠端控制與監控功能。",
-      "market_analysis": "主要目標市場包含：台灣、日本、美國。在這些地區，智慧裝置與寵物相關產品的接受度逐年提升，若搭配適當的在地化行銷，有機會建立差異化定位。",
-      "strengths": [
-        "具遠端控制與監控功能，提升使用者便利性",
-        "目前規劃售價區間為：120-150 USD"
-      ],
-      "risks": [
-        "需確認不同市場的法規與認證要求",
-        "市場上可能已有類似智慧設備競品，需強調獨特價值"
-      ],
-      "suggestions": [
-        "優先針對 台灣、日本、美國 進行市場規模與競品分析。",
-        "補充競品價格、功能比較，強化產品定位敘事。",
-        "針對 B2C 客群調整溝通語氣與行銷素材。"
-      ]
-    }
-  },
-  "error": null,
-  "meta": null
-}
-```
-
-若尚未提交回答就產生報告，會得到 400：
-
-```json
-{
-  "detail": "目前狀態不允許產生報告，請先提交回答"
-}
-```
-
----
-
-### 狀態設計補充說明
-
-`Session` 狀態枚舉包含：
-
-- `created`
-- `questions_generated`
-- `answers_submitted`
-- `report_generated`
-- `failed`
-
-服務內部會依照呼叫順序自動更新狀態，若在錯誤的狀態下呼叫 API，會回傳 400 並附上錯誤描述。
+- 容器內**沒有**本機 `.env`，請在 Cloud Run **變數與密碼**設定 `OPENAI_API_KEY`（必填 SWOT）、可選 `APP_ENV`、`DEBUG` 等。
+- 流程可為：**本機 `docker build` → `docker push` 至 Artifact Registry → Cloud Run 選該映像檔**；或使用上一節的 `gcloud run deploy --source ./backend`。
 
 ---
 
 ### 後續擴充建議
 
-- 將 `memory_store` 替換為真實資料庫（例如 PostgreSQL / MySQL / MongoDB）。
-- 在 `llm_service.py` 中實作實際的 LLM 呼叫（例如 OpenAI Chat Completions）。
-- 加入驗證與權限控制（例如 API Key、JWT）。
-- 將錯誤與請求記錄到集中式 Log / APM。
-
-# Backend
+- 將 `memory_store` 換成資料庫。
+- 若仍要問答流程，可將 `questions` / `report` 改為真實 LLM。
+- API Key、JWT、Rate limit、集中式 Log。
