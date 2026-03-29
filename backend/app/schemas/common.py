@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class SessionStatusEnum(str, Enum):
     created = "created"
+    swot_generated = "swot_generated"
     questions_generated = "questions_generated"
     answers_submitted = "answers_submitted"
     report_generated = "report_generated"

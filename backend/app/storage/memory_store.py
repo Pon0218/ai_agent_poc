@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Any
 
 class SessionStatus(str, Enum):
     CREATED = "created"
+    SWOT_GENERATED = "swot_generated"  # 簡化流程：一鍵產生 SWOT（Markdown）
     QUESTIONS_GENERATED = "questions_generated"
     ANSWERS_SUBMITTED = "answers_submitted"
     REPORT_GENERATED = "report_generated"
@@ -48,6 +49,8 @@ class SessionRecord:
     questions: List[QuestionRecord] = field(default_factory=list)
     answers: List[AnswerRecord] = field(default_factory=list)
     report: Optional[ReportRecord] = None
+    # 簡化流程：LLM 一次產出的 SWOT 分析（Markdown）
+    swot_markdown: Optional[str] = None
     # 可附加額外欄位（例如 trace id、meta 資訊）
     metadata: Dict[str, Any] = field(default_factory=dict)
 

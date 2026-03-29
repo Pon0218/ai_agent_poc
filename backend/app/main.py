@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import get_settings
-from .routes import health, session, question, answer, report
+from .routes import health, session, question, answer, report, swot
 
 
 def create_app() -> FastAPI:
@@ -27,9 +27,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # 註冊 routers
+    # 註冊 routers（主流程：health → session → swot；其餘為預留擴充）
     app.include_router(health.router)
     app.include_router(session.router)
+    app.include_router(swot.router)
     app.include_router(question.router)
     app.include_router(answer.router)
     app.include_router(report.router)

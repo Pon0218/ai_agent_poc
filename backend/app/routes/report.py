@@ -21,6 +21,6 @@ async def generate_report(
     result = report_service.generate_report(session_id)
     return BaseAPIResponse(
         success=True,
-        data=result.dict(),
+        data=result.model_dump(),
     )
 

@@ -17,6 +17,6 @@ async def create_session(payload: SessionCreateRequest) -> BaseAPIResponse:
     result = session_service.create_session(payload)
     return BaseAPIResponse(
         success=True,
-        data=result.dict(),
+        data=result.model_dump(),
     )
 
