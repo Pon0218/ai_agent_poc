@@ -1,0 +1,68 @@
+name: Build and Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-cloudrun.yml"
+
+env:
+  PROJECT_ID: "aiagentpoc-490109"
+  REGION: "us-central1"
+  SERVICE: "ai-agent-poc"
+  REPOSITORY: "aiagentpoc"
+  WORKLOAD_IDENTITY_PROVIDER: "projects/219748402029/locations/global/workloadIdentityPools/aiagentpoc-github-pool/providers/aiagentpoc-github-provider"
+  SERVICE_ACCOUNT: "ponpon-service-account@aiagentpoc-490109.iam.gserviceaccount.com"
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          token_format: access_token
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and Push Container
+        run: |
+          IMAGE_NAME="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}"
+          echo "Building image: ${IMAGE_NAME}"
+          docker build -f backend/Dockerfile -t "${IMAGE_NAME}" backend
+          echo "Pushing image: ${IMAGE_NAME}"
+          docker push "${IMAGE_NAME}"
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}
+          env_vars: |
+            OPENAI_API_KEY=${{ env.OPENAI_API_KEY }}
+
+      - name: Show Service URL
+        run: echo "${{ steps.deploy.outputs.url }}"
