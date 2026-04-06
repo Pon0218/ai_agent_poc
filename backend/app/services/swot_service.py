@@ -10,25 +10,10 @@ from ..storage.memory_store import memory_store, SessionStatus
 
 
 class SWOTService:
-    """
-    簡化流程：依 session 的產品資訊呼叫 LLM，一次產出 SWOT 分析（Markdown）。
-    """
+    """依 session 的產品資訊呼叫 LLM，一次產出 SWOT（Markdown）。"""
 
     def generate_swot(self, session_id: str) -> SWOTGenerateResponse:
-        """
-        取得 session → 呼叫 LLM 產生 SWOT Markdown → 寫回 session 並回傳。
-        """
         session = session_service.get_session_or_404(session_id)
-
-        # 允許 created 或已產生過 swot 的 session 再產生一次
-        if session.status not in {
-            SessionStatus.CREATED,
-            SessionStatus.SWOT_GENERATED,
-        }:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="此 session 已進入問答流程，請另建新 session 使用 SWOT 簡化流程",
-            )
 
         try:
             swot_markdown = llm_service.generate_swot(session)

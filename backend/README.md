@@ -5,21 +5,17 @@
 1. **用戶輸入**：產品名稱、產品網址、產品敘述（建立 Session）
 2. **LLM**：依 Session 內產品資訊**一次**產出 **SWOT 分析**，以 **Markdown 字串**回傳
 
-> 這不是「多輪一問一答」流程；若之後要問答＋報告，可使用下方「預留擴充 API」。
-
 SWOT 會透過 **OpenAI API** 產生，需在 `.env` 設定 `OPENAI_API_KEY`（並於 OpenAI 帳戶啟用計費／額度）。
 
 ---
 
-### 專案功能簡述（目前主流程）
+### 專案功能簡述
 
 | 步驟 | 說明 |
 |------|------|
 | 建立 Session | `POST /sessions` 接收產品名稱、網址、敘述 |
 | 產生 SWOT | `POST /sessions/{session_id}/swot/generate` 呼叫 LLM，回傳 `swot_markdown`（Markdown） |
 | Health | `GET /health` 檢查服務是否正常 |
-
-**預留擴充**（程式仍存在，可暫不串接）：產生追問問題、提交回答、產生結構化報告（部分仍為 mock）。
 
 ---
 
@@ -32,14 +28,11 @@ backend/
     routes/
       health.py
       session.py             # POST /sessions
-      swot.py                # POST /sessions/{id}/swot/generate（主流程）
-      question.py            # （預留）追問問題
-      answer.py              # （預留）回答
-      report.py              # （預留）報告
+      swot.py                # POST /sessions/{id}/swot/generate
     schemas/
-      session.py, swot.py, common.py, ...
+      session.py, swot.py, common.py
     services/
-      session_service.py, swot_service.py, llm_service.py（含 OpenAI SWOT）, ...
+      session_service.py, swot_service.py, llm_service.py
     core/
       config.py              # .env / OPENAI_API_KEY
     storage/
@@ -204,20 +197,6 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-### 預留擴充：多步驟問答＋報告（與 README 舊版相同）
-
-以下 API 仍存在，**非目前主流程**；行為與狀態機與「兩步驟 SWOT」獨立，可依產品規劃再串接。
-
-| API | 說明 |
-|-----|------|
-| `POST /sessions/{session_id}/questions/generate` | mock 產生追問問題 |
-| `POST /sessions/{session_id}/answers` | 提交多題回答 |
-| `POST /sessions/{session_id}/report/generate` | mock 產生結構化報告 |
-
-`Session` 狀態另包含：`swot_generated`（SWOT 流程）、以及問答流程用的 `questions_generated`、`answers_submitted`、`report_generated`、`failed` 等。
-
----
-
 ### 部署（Cloud Run 等）
 
 - 容器內**沒有**本機 `.env`，請在 Cloud Run **變數與密碼**設定 `OPENAI_API_KEY`（必填 SWOT）、可選 `APP_ENV`、`DEBUG` 等。
@@ -228,5 +207,4 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ### 後續擴充建議
 
 - 將 `memory_store` 換成資料庫。
-- 若仍要問答流程，可將 `questions` / `report` 改為真實 LLM。
 - API Key、JWT、Rate limit、集中式 Log。

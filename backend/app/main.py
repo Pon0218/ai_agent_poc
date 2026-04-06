@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import get_settings
-from .routes import health, session, question, answer, report, swot
+from .routes import health, session, swot
 
 
 def create_app() -> FastAPI:
@@ -18,7 +18,6 @@ def create_app() -> FastAPI:
         debug=settings.DEBUG,
     )
 
-    # CORS 設定：目前先開放全部來源，方便前端 MVP 串接
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -27,16 +26,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # 註冊 routers（主流程：health → session → swot；其餘為預留擴充）
     app.include_router(health.router)
     app.include_router(session.router)
     app.include_router(swot.router)
-    app.include_router(question.router)
-    app.include_router(answer.router)
-    app.include_router(report.router)
 
     return app
 
 
 app = create_app()
-
