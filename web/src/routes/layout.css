@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+html {
+	scrollbar-gutter: stable;
+}
+
+@theme {
+	--color-s-background: #020826;
+	--color-s-card-background: #eaddcf;
+	--color-s-headline: #020826;
+	--color-s-card-heading: #020826;
+	--color-s-sub-headline: #716040;
+	--color-s-card-paragraph: #716040;
+	--color-s-stroke: #020826;
+	--color-s-secondary: #eaddcf;
+	--color-s-main: #fffffe;
+	--color-s-tertiary: #f25042;
+	--color-s-highlight: #8c7851;
+}
