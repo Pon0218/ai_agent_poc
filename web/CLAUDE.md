@@ -33,17 +33,17 @@ This project uses **Tailwind v4**. Key differences from v3:
 @plugin '@tailwindcss/typography';
 
 @theme {
-	--color-s-background: #020826;
-	--color-s-card-background: #eaddcf;
-	--color-s-headline: #020826;
-	--color-s-card-heading: #020826;
-	--color-s-sub-headline: #716040;
-	--color-s-card-paragraph: #716040;
-	--color-s-stroke: #020826;
-	--color-s-secondary: #eaddcf;
-	--color-s-main: #fffffe;
-	--color-s-tertiary: #f25042;
-	--color-s-highlight: #8c7851;
+	--color-s-background: #fbf7ef;
+	--color-s-card-background: #e1e5e6;
+	--color-s-headline: #24252d;
+	--color-s-card-heading: #24252d;
+	--color-s-sub-headline: #7c746f;
+	--color-s-card-paragraph: #7c746f;
+	--color-s-stroke: #bdc4c6;
+	--color-s-secondary: #fbf7ef;
+	--color-s-main: #ffffff;
+	--color-s-button: #838b8e;
+	--color-s-placeholder: #838b8e;
 }
 ```
 
