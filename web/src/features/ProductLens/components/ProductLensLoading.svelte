@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import { generateSwot } from '../api/swot-generate';
 
 	let { sessionId, onComplete }: { sessionId: string; onComplete: (markdown: string) => void } =
@@ -11,11 +12,24 @@
 	];
 
 	let activeIndex = $state(0);
+	let visible = $state(true);
+
+	const prefersReducedMotion =
+		typeof window !== 'undefined' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	$effect(() => {
-		const timer = setInterval(() => {
-			activeIndex = (activeIndex + 1) % messages.length;
-		}, 2500);
+		if (prefersReducedMotion) return;
+
+		const cycle = () => {
+			visible = false;
+			setTimeout(() => {
+				activeIndex = (activeIndex + 1) % messages.length;
+				visible = true;
+			}, 400);
+		};
+
+		const timer = setInterval(cycle, 2800);
 		return () => clearInterval(timer);
 	});
 
@@ -43,16 +57,16 @@
 	});
 </script>
 
-<div class="flex w-full flex-col items-center justify-center px-4 py-20">
-	<div class="flex flex-col items-center gap-1 text-center">
-		{#each messages as msg, i (msg)}
+<div class="flex w-full flex-col items-center justify-center px-4 py-24">
+	<div class="flex h-14 flex-col items-center justify-center text-center">
+		{#if visible}
 			<p
-				class="font-['Playfair_Display'] text-2xl leading-snug text-s-sub-headline italic transition-opacity duration-700 md:text-[36px] md:leading-[36px]"
-				class:opacity-100={activeIndex === i}
-				class:opacity-20={activeIndex !== i}
+				in:fade={{ duration: 400 }}
+				out:fade={{ duration: 300 }}
+				class="font-['Playfair_Display'] text-2xl leading-snug text-s-sub-headline italic md:text-3xl"
 			>
-				{msg}
+				{messages[activeIndex]}
 			</p>
-		{/each}
+		{/if}
 	</div>
 </div>

@@ -7,10 +7,14 @@
 	let productName = $state('');
 	let websiteUrl = $state('');
 	let productDescription = $state('');
+	let submitted = $state(false);
 
 	const mutation = useCreateSession();
 
-	const canSubmit = $derived(productName.trim().length > 0 && !mutation.isPending);
+	const nameValid = $derived(productName.trim().length > 0);
+	const urlValid = $derived(websiteUrl.trim().length > 0);
+	const descValid = $derived(productDescription.trim().length > 0);
+	const canSubmit = $derived(nameValid && urlValid && descValid && !mutation.isPending);
 
 	$effect(() => {
 		if (mutation.isSuccess && mutation.data) {
@@ -19,71 +23,101 @@
 	});
 
 	function handleSubmit() {
+		submitted = true;
 		if (!canSubmit) return;
 		const payload: InputType = {
 			product_name: productName,
-			website_url: websiteUrl || null,
-			product_description: productDescription || null
+			website_url: websiteUrl,
+			product_description: productDescription
 		};
 		mutation.mutate(payload);
 	}
 </script>
 
-<div class="flex w-full flex-col items-center gap-6 px-4 py-10">
-	<div class="flex flex-col items-center gap-3 text-center">
+<div class="flex w-full flex-col items-center gap-6 px-4 py-8">
+	<div class="flex flex-col items-center gap-2 text-center">
 		<p
-			class="font-['Playfair_Display'] text-3xl leading-tight text-s-sub-headline italic md:text-[36px]"
+			class="font-['Playfair_Display'] text-2xl leading-tight text-s-sub-headline italic md:text-3xl"
 		>
 			Hi, what are you building?
 		</p>
-		<p class="font-['Playfair_Display'] text-3xl leading-tight text-s-headline md:text-[36px]">
+		<p class="font-['Playfair_Display'] text-2xl leading-tight text-s-headline md:text-3xl">
 			Drop a URL. Get a full product report.
 		</p>
 	</div>
 
-	<div class="flex w-full max-w-152 flex-col gap-3">
+	<div class="w-full max-w-xl">
 		<div
-			class="rounded-2xl bg-s-card-background/50 px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.04)] backdrop-blur-[42px]"
+			class="overflow-hidden rounded-2xl bg-s-card-background/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] backdrop-blur-[42px]"
 		>
-			<input
-				bind:value={productName}
-				placeholder="產品名稱"
-				class="w-full bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
-			/>
+			<!-- 產品名稱 -->
+			<label
+				class="block px-5 pt-4 pb-3"
+				class:border-b={true}
+				style="border-bottom: 1px solid rgba(0,0,0,0.06)"
+			>
+				<span
+					class="mb-1 block text-[11px] font-semibold tracking-wider text-s-sub-headline uppercase"
+				>
+					產品名稱
+					{#if submitted && !nameValid}<span class="ml-1 text-red-400">必填</span>{/if}
+				</span>
+				<input
+					bind:value={productName}
+					placeholder="e.g. Notion、Figma、你的 SaaS"
+					autocomplete="off"
+					class="w-full bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
+				/>
+			</label>
+
+			<!-- 產品網址 -->
+			<label class="block px-5 pt-4 pb-3" style="border-bottom: 1px solid rgba(0,0,0,0.06)">
+				<span
+					class="mb-1 block text-[11px] font-semibold tracking-wider text-s-sub-headline uppercase"
+				>
+					產品網址
+					{#if submitted && !urlValid}<span class="ml-1 text-red-400">必填</span>{/if}
+				</span>
+				<input
+					bind:value={websiteUrl}
+					placeholder="https://example.com"
+					type="url"
+					autocomplete="url"
+					class="w-full bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
+				/>
+			</label>
+
+			<!-- 產品敘述 -->
+			<label class="block px-5 pt-4 pb-3">
+				<span
+					class="mb-1 block text-[11px] font-semibold tracking-wider text-s-sub-headline uppercase"
+				>
+					產品敘述
+					{#if submitted && !descValid}<span class="ml-1 text-red-400">必填</span>{/if}
+				</span>
+				<textarea
+					bind:value={productDescription}
+					placeholder="這個產品解決什麼問題？目標用戶是誰？"
+					rows="3"
+					class="w-full resize-none bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
+				></textarea>
+			</label>
 		</div>
 
-		<div
-			class="rounded-2xl bg-s-card-background/50 px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.04)] backdrop-blur-[42px]"
-		>
-			<input
-				bind:value={websiteUrl}
-				placeholder="產品網址"
-				type="url"
-				class="w-full bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
-			/>
-		</div>
+		{#if mutation.isError}
+			<p role="alert" class="mt-2 px-1 text-xs text-red-400">
+				Something went wrong. Please try again.
+			</p>
+		{/if}
 
-		<div
-			class="rounded-2xl bg-s-card-background/50 px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.04)] backdrop-blur-[42px]"
-		>
-			<textarea
-				bind:value={productDescription}
-				placeholder="產品敘述"
-				rows="3"
-				class="w-full resize-none bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
-			></textarea>
-		</div>
-
-		<div class="flex items-center justify-end gap-3">
-			{#if mutation.isError}
-				<p class="text-xs text-red-400">Something went wrong. Please try again.</p>
-			{/if}
+		<div class="mt-3 flex justify-end">
 			<button
 				onclick={handleSubmit}
-				disabled={!canSubmit}
-				class="cursor-pointer rounded-md bg-s-button px-3 py-1 font-['Playfair_Display'] text-sm text-s-main transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={mutation.isPending}
+				aria-busy={mutation.isPending}
+				class="cursor-pointer rounded-xl bg-s-button px-6 py-2.5 font-['Playfair_Display'] text-sm text-s-main shadow-sm transition-all hover:opacity-85 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
 			>
-				{mutation.isPending ? 'Analyzing...' : 'Analyze'}
+				{mutation.isPending ? 'Analyzing...' : 'Analyze →'}
 			</button>
 		</div>
 	</div>

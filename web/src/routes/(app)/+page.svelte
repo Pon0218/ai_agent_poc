@@ -1,29 +1,34 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import ProductLensForm from '@/features/ProductLens/components/ProductLensForm.svelte';
 	import ProductLensLoading from '@/features/ProductLens/components/ProductLensLoading.svelte';
 	import ProductLensReport from '@/features/ProductLens/components/ProductLensReport.svelte';
 
 	type Stage = 'form' | 'loading' | 'report';
+	type AppContext = {
+		stage: Stage;
+		sessionId: string;
+		reportMarkdown: string;
+		reset: () => void;
+	};
 
-	let stage = $state<Stage>('form');
-	let sessionId = $state('');
-	let reportMarkdown = $state('');
+	const ctx = getContext<AppContext>('app');
 
 	function handleFormSuccess(id: string) {
-		sessionId = id;
-		stage = 'loading';
+		ctx.sessionId = id;
+		ctx.stage = 'loading';
 	}
 
 	function handleReportReady(markdown: string) {
-		reportMarkdown = markdown;
-		stage = 'report';
+		ctx.reportMarkdown = markdown;
+		ctx.stage = 'report';
 	}
 </script>
 
-{#if stage === 'form'}
+{#if ctx.stage === 'form'}
 	<ProductLensForm onSuccess={handleFormSuccess} />
-{:else if stage === 'loading'}
-	<ProductLensLoading {sessionId} onComplete={handleReportReady} />
+{:else if ctx.stage === 'loading'}
+	<ProductLensLoading sessionId={ctx.sessionId} onComplete={handleReportReady} />
 {:else}
-	<ProductLensReport markdown={reportMarkdown} />
+	<ProductLensReport markdown={ctx.reportMarkdown} onReset={ctx.reset} />
 {/if}
