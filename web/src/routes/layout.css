@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme {
+	--color-s-background: #fbf7ef;
+	--color-s-card-background: #e1e5e6;
+	--color-s-headline: #24252d;
+	--color-s-card-heading: #24252d;
+	--color-s-sub-headline: #7c746f;
+	--color-s-card-paragraph: #7c746f;
+	--color-s-stroke: #bdc4c6;
+	--color-s-secondary: #fbf7ef;
+	--color-s-main: #ffffff;
+	--color-s-button: #838b8e;
+	--color-s-placeholder: #838b8e;
+}

@@ -1,0 +1,31 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+# Cloudflare Types
+/worker-configuration.d.ts
+
+# storybook
+*storybook.log
+storybook-static
+
+# test coverage
+/coverage
+
+# ＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+# Allow web/lib/ to override the parent .gitignore lib rule
+!lib/
+!.env.*
