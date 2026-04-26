@@ -7,8 +7,10 @@
 		$props();
 
 	const mutation = useGenerateSwot();
+	let error = $state<string | null>(null);
 
-	onMount(() => {
+	function startPoll() {
+		error = null;
 		let alive = true;
 
 		const poll = () => {
@@ -22,8 +24,9 @@
 						setTimeout(poll, 3000);
 					}
 				},
-				onError: () => {
-					if (alive) setTimeout(poll, 3000);
+				onError: (err) => {
+					if (!alive) return;
+					error = err instanceof Error ? err.message : '分析失敗，請稍後再試';
 				}
 			});
 		};
@@ -32,7 +35,24 @@
 		return () => {
 			alive = false;
 		};
+	}
+
+	onMount(() => {
+		const cleanup = startPoll();
+		return cleanup;
 	});
 </script>
 
-<LoadingState />
+{#if error}
+	<div class="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-6 py-20">
+		<p class="text-center font-ui text-pl-neg">{error}</p>
+		<button
+			onclick={startPoll}
+			class="rounded-pl-sm bg-pl-accent px-6 py-2.5 font-ui text-sm text-pl-bg transition-colors hover:bg-pl-accent-h"
+		>
+			重新嘗試
+		</button>
+	</div>
+{:else}
+	<LoadingState />
+{/if}

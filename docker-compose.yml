@@ -1,0 +1,63 @@
+name: ai-agent-poc
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    image: ai-agent-backend:latest
+    container_name: ai-agent-backend
+
+    ports:
+      - "8000:8080"
+
+    volumes:
+      - ./backend/app:/app/app
+
+    env_file:
+      - path: ./backend/.env
+        required: false
+
+    environment:
+      - DEBUG=true
+      - APP_ENV=local
+
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080",
+        "--reload",
+        "--reload-dir",
+        "/app/app",
+      ]
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+
+    image: ai-agent-web:latest
+    container_name: ai-agent-web
+
+    ports:
+      - "5173:5173"
+
+    volumes:
+      - ./web/src:/app/src
+      - ./web/static:/app/static
+
+    restart: unless-stopped
