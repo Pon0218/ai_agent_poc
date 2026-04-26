@@ -1,7 +1,12 @@
 @import 'tailwindcss';
+
+html {
+	scroll-behavior: smooth;
+}
 @plugin '@tailwindcss/typography';
 
 @theme {
+	/* ── Legacy s-* tokens (kept for existing components) ── */
 	--color-s-background: #fbf7ef;
 	--color-s-card-background: #e1e5e6;
 	--color-s-headline: #24252d;
@@ -13,4 +18,27 @@
 	--color-s-main: #ffffff;
 	--color-s-button: #838b8e;
 	--color-s-placeholder: #838b8e;
+
+	/* ── ProductLens design system ── */
+	--color-pl-bg: #f5f1eb;
+	--color-pl-bg-2: #efeae0;
+	--color-pl-card: #e8e3da;
+	--color-pl-card-2: #ded7cb;
+	--color-pl-ink: #1a1a18;
+	--color-pl-ink-2: #888780;
+	--color-pl-ink-3: #b5b1a8;
+	--color-pl-rule: #d9d2c5;
+	--color-pl-accent: #2c2c2a;
+	--color-pl-accent-h: #45433f;
+	--color-pl-pos: #3d5a3a;
+	--color-pl-neg: #8a3a2e;
+	--color-pl-warn: #8a6e2e;
+
+	--font-display: 'Lora', Georgia, serif;
+	--font-ui: 'DM Sans', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+	--radius-pl-sm: 8px;
+	--radius-pl-md: 14px;
+	--radius-pl-lg: 20px;
 }

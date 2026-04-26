@@ -98,3 +98,65 @@ npm run lint             # prettier + eslint
 npm run storybook        # storybook dev (port 6006)
 npm run build-storybook  # storybook static build
 ```
+
+---
+
+## ProductLens Design System
+
+### Color tokens (`pl-*`)
+
+Defined in `src/routes/layout.css` under `@theme {}`. Use as Tailwind utilities (`bg-pl-bg`, `text-pl-ink`, `border-pl-rule`, etc.).
+
+| Token         | Value     | Role                             |
+| ------------- | --------- | -------------------------------- |
+| `pl-bg`       | `#F5F1EB` | Page background — warm cream     |
+| `pl-bg-2`     | `#EFEAE0` | Slightly deeper background layer |
+| `pl-card`     | `#E8E3DA` | Card / field surface             |
+| `pl-card-2`   | `#DED7CB` | Deeper card surface              |
+| `pl-ink`      | `#1A1A18` | Primary text & fills             |
+| `pl-ink-2`    | `#888780` | Secondary / muted text           |
+| `pl-ink-3`    | `#B5B1A8` | Placeholder / subtle text        |
+| `pl-rule`     | `#D9D2C5` | Dividers & borders               |
+| `pl-accent`   | `#2C2C2A` | Button & accent fills            |
+| `pl-accent-h` | `#45433F` | Button hover state               |
+| `pl-pos`      | `#3D5A3A` | Positive / strength indicator    |
+| `pl-neg`      | `#8A3A2E` | Negative / weakness indicator    |
+| `pl-warn`     | `#8A6E2E` | Warning / opportunity indicator  |
+
+### Typography
+
+| Token class           | Font            | Usage                                        |
+| --------------------- | --------------- | -------------------------------------------- |
+| `font-display`        | Lora 600        | Hero h1, section titles, card headings       |
+| `font-display italic` | Lora 400 italic | Subheadings, pull quotes, lede text          |
+| `font-ui`             | DM Sans         | All body copy and UI labels (body default)   |
+| `font-mono`           | JetBrains Mono  | Eyebrows (`UPPERCASE · TRACKED`), code, meta |
+
+Google Fonts link is pre-loaded in `src/app.html`.
+
+### Spacing & layout
+
+- **Section vertical padding**: `py-[clamp(72px,9vw,128px)]` (use on each `<section>`)
+- **Wrap / max-width**: `max-w-[1280px] mx-auto px-5 md:px-12 lg:px-20`
+- **Border radius**: `rounded-pl-sm` (8px) · `rounded-pl-md` (14px) · `rounded-pl-lg` (20px)
+
+### Route & component map
+
+| URL        | Route file                   | Key components                                                                                        |
+| ---------- | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `/`        | `(app)/+page.svelte`         | Hero, SocialProof, FeatureGrid, Banner, BigPicture, CompareTable, Testimonial, Steps, CtaBanner       |
+| `/analyze` | `(app)/analyze/+page.svelte` | ProductLensForm (calls `useCreateSession`, stores sessionId → sessionStorage, navigates to `/result`) |
+| `/result`  | `(app)/result/+page.svelte`  | ProductLensLoading → ProductLensReport (reads sessionId from sessionStorage)                          |
+
+All feature components live in `src/features/ProductLens/components/`.
+
+Result sub-components (used inside `ProductLensReport`):
+
+- `SwotGrid` — 4-quadrant SWOT display, accepts `strengths/weaknesses/opportunities/threats` string arrays
+- `MarketOverview` — accepts optional `body` string (raw API markdown shown here)
+- `CompetitorGrid` — accepts `competitors` array `{ name, score, description, percent }`
+- `Recommendations` — accepts `items` array `{ timeframe, text }`
+
+### Asset
+
+`src/lib/assets/coffee.png` — hero photo used in `Testimonial.svelte` (import via `$lib/assets/coffee.png?url`).

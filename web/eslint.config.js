@@ -16,6 +16,7 @@ import pluginQuery from '@tanstack/eslint-plugin-query';
 const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
+	{ ignores: ['.claude/**'] },
 	...storybook.configs['flat/recommended'],
 	...pluginQuery.configs['flat/recommended-strict'],
 	includeIgnoreFile(gitignorePath),

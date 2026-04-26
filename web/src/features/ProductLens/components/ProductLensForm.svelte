@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { useCreateSession } from '../hooks/useCreateSession';
 	import type { InputType } from '../api/sessions';
+	import LoadingState from './LoadingState.svelte';
 
-	let { onSuccess }: { onSuccess: (sessionId: string) => void } = $props();
+	let { onSuccess }: { onSuccess: (sessionId: string, productName: string) => void } = $props();
 
 	let productName = $state('');
 	let websiteUrl = $state('');
@@ -16,13 +17,8 @@
 	const descValid = $derived(productDescription.trim().length > 0);
 	const canSubmit = $derived(nameValid && urlValid && descValid && !mutation.isPending);
 
-	$effect(() => {
-		if (mutation.isSuccess && mutation.data) {
-			onSuccess(mutation.data.data.session_id);
-		}
-	});
-
-	function handleSubmit() {
+	function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
 		submitted = true;
 		if (!canSubmit) return;
 		const payload: InputType = {
@@ -30,95 +26,114 @@
 			website_url: websiteUrl,
 			product_description: productDescription
 		};
-		mutation.mutate(payload);
+		mutation.mutate(payload, {
+			onSuccess: (data) => onSuccess(data.data.session_id, productName)
+		});
 	}
 </script>
 
-<div class="flex w-full flex-col items-center gap-6 px-4 py-8">
-	<div class="flex flex-col items-center gap-2 text-center">
-		<p
-			class="font-['Playfair_Display'] text-2xl leading-tight text-s-sub-headline italic md:text-3xl"
-		>
+{#if mutation.isPending}
+	<LoadingState />
+{:else}
+	<div class="mx-auto max-w-190 px-5 py-[clamp(64px,9vw,120px)] text-center md:px-12">
+		<p class="mb-3 font-display text-[clamp(18px,2vw,24px)] text-pl-ink-2 italic">
 			Hi, what are you building?
 		</p>
-		<p class="font-['Playfair_Display'] text-2xl leading-tight text-s-headline md:text-3xl">
-			Drop a URL. Get a full product report.
-		</p>
-	</div>
-
-	<div class="w-full max-w-xl">
-		<div
-			class="overflow-hidden rounded-2xl bg-s-card-background/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] backdrop-blur-[42px]"
+		<h1
+			class="m-0 mb-16 font-display text-[clamp(36px,5vw,60px)] leading-[1.05] font-semibold tracking-[-0.02em]"
 		>
-			<!-- 產品名稱 -->
-			<label
-				class="block px-5 pt-4 pb-3"
-				class:border-b={true}
-				style="border-bottom: 1px solid rgba(0,0,0,0.06)"
-			>
-				<span
-					class="mb-1 block text-[11px] font-semibold tracking-wider text-s-sub-headline uppercase"
+			Drop a URL. Get a full product report.
+		</h1>
+
+		<form
+			onsubmit={handleSubmit}
+			class="rounded-pl-lg bg-pl-card p-2 text-left shadow-[0_1px_0_rgba(0,0,0,0.02)]"
+		>
+			<div class="border-b px-7 py-5.5" style="border-color: rgba(26,26,24,0.07);">
+				<label
+					class="mb-2 block font-mono text-[11px] tracking-[0.14em] text-pl-ink-2 uppercase"
+					for="f-name"
 				>
 					產品名稱
-					{#if submitted && !nameValid}<span class="ml-1 text-red-400">必填</span>{/if}
-				</span>
+					{#if submitted && !nameValid}
+						<span
+							class="ml-1 font-ui font-normal tracking-normal text-pl-neg normal-case"
+							>必填</span
+						>
+					{/if}
+				</label>
 				<input
+					id="f-name"
 					bind:value={productName}
+					type="text"
 					placeholder="e.g. Notion、Figma、你的 SaaS"
 					autocomplete="off"
-					class="w-full bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
+					class="w-full border-0 bg-transparent py-1 text-[16px] text-pl-ink outline-none placeholder:text-pl-ink-3"
 				/>
-			</label>
+			</div>
 
-			<!-- 產品網址 -->
-			<label class="block px-5 pt-4 pb-3" style="border-bottom: 1px solid rgba(0,0,0,0.06)">
-				<span
-					class="mb-1 block text-[11px] font-semibold tracking-wider text-s-sub-headline uppercase"
+			<div class="border-b px-7 py-5.5" style="border-color: rgba(26,26,24,0.07);">
+				<label
+					class="mb-2 block font-mono text-[11px] tracking-[0.14em] text-pl-ink-2 uppercase"
+					for="f-url"
 				>
 					產品網址
-					{#if submitted && !urlValid}<span class="ml-1 text-red-400">必填</span>{/if}
-				</span>
+					{#if submitted && !urlValid}
+						<span
+							class="ml-1 font-ui font-normal tracking-normal text-pl-neg normal-case"
+							>必填</span
+						>
+					{/if}
+				</label>
 				<input
+					id="f-url"
 					bind:value={websiteUrl}
-					placeholder="https://example.com"
 					type="url"
+					placeholder="https://example.com"
 					autocomplete="url"
-					class="w-full bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
+					class="w-full border-0 bg-transparent py-1 text-[16px] text-pl-ink outline-none placeholder:text-pl-ink-3"
 				/>
-			</label>
+			</div>
 
-			<!-- 產品敘述 -->
-			<label class="block px-5 pt-4 pb-3">
-				<span
-					class="mb-1 block text-[11px] font-semibold tracking-wider text-s-sub-headline uppercase"
+			<div class="px-7 py-5.5">
+				<label
+					class="mb-2 block font-mono text-[11px] tracking-[0.14em] text-pl-ink-2 uppercase"
+					for="f-desc"
 				>
 					產品敘述
-					{#if submitted && !descValid}<span class="ml-1 text-red-400">必填</span>{/if}
-				</span>
+					{#if submitted && !descValid}
+						<span
+							class="ml-1 font-ui font-normal tracking-normal text-pl-neg normal-case"
+							>必填</span
+						>
+					{/if}
+				</label>
 				<textarea
+					id="f-desc"
 					bind:value={productDescription}
-					placeholder="這個產品解決什麼問題？目標用戶是誰？"
 					rows="3"
-					class="w-full resize-none bg-transparent text-sm text-s-headline placeholder:text-s-placeholder focus:outline-none"
+					placeholder="這個產品解決什麼問題？目標用戶是誰？"
+					class="min-h-18 w-full resize-none border-0 bg-transparent py-1 font-ui text-[16px] leading-normal text-pl-ink outline-none placeholder:text-pl-ink-3"
 				></textarea>
-			</label>
-		</div>
+			</div>
+
+			<div class="flex items-center justify-between px-7 py-4.5">
+				<span class="font-mono text-[11px] tracking-widest text-pl-ink-2">
+					⏱&nbsp; Avg. analysis · 1m 48s
+				</span>
+				<button
+					type="submit"
+					class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-pl-accent px-5 py-3 text-[14px] font-medium text-pl-bg transition-colors hover:bg-pl-accent-h"
+				>
+					Analyze →
+				</button>
+			</div>
+		</form>
 
 		{#if mutation.isError}
-			<p role="alert" class="mt-2 px-1 text-xs text-red-400">
+			<p role="alert" class="mt-3 text-[13px] text-pl-neg">
 				Something went wrong. Please try again.
 			</p>
 		{/if}
-
-		<div class="mt-3 flex justify-end">
-			<button
-				onclick={handleSubmit}
-				disabled={mutation.isPending}
-				aria-busy={mutation.isPending}
-				class="cursor-pointer rounded-xl bg-s-button px-6 py-2.5 font-['Playfair_Display'] text-sm text-s-main shadow-sm transition-all hover:opacity-85 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-			>
-				{mutation.isPending ? 'Analyzing...' : 'Analyze →'}
-			</button>
-		</div>
 	</div>
-</div>
+{/if}

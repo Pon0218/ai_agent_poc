@@ -1,72 +1,38 @@
 <script lang="ts">
-	import { fade } from 'svelte/transition';
-	import { generateSwot } from '../api/swot-generate';
+	import { onMount } from 'svelte';
+	import { useGenerateSwot } from '../hooks/useGenerateSwot';
+	import LoadingState from './LoadingState.svelte';
 
 	let { sessionId, onComplete }: { sessionId: string; onComplete: (markdown: string) => void } =
 		$props();
 
-	const messages = [
-		'Understanding the core features...',
-		'Structuring the report...',
-		'Almost there...'
-	];
+	const mutation = useGenerateSwot();
 
-	let activeIndex = $state(0);
-	let visible = $state(true);
-
-	const prefersReducedMotion =
-		typeof window !== 'undefined' &&
-		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-	$effect(() => {
-		if (prefersReducedMotion) return;
-
-		const cycle = () => {
-			visible = false;
-			setTimeout(() => {
-				activeIndex = (activeIndex + 1) % messages.length;
-				visible = true;
-			}, 400);
-		};
-
-		const timer = setInterval(cycle, 2800);
-		return () => clearInterval(timer);
-	});
-
-	$effect(() => {
+	onMount(() => {
 		let alive = true;
 
-		(async () => {
-			while (alive) {
-				try {
-					const result = await generateSwot(sessionId);
+		const poll = () => {
+			if (!alive) return;
+			mutation.mutate(sessionId, {
+				onSuccess: (result) => {
+					if (!alive) return;
 					if (result.data.swot_markdown) {
-						if (alive) onComplete(result.data.swot_markdown);
-						return;
+						onComplete(result.data.swot_markdown);
+					} else {
+						setTimeout(poll, 3000);
 					}
-				} catch {
-					// silently retry
+				},
+				onError: () => {
+					if (alive) setTimeout(poll, 3000);
 				}
-				await new Promise((r) => setTimeout(r, 3000));
-			}
-		})();
+			});
+		};
 
+		poll();
 		return () => {
 			alive = false;
 		};
 	});
 </script>
 
-<div class="flex w-full flex-col items-center justify-center px-4 py-24">
-	<div class="flex h-14 flex-col items-center justify-center text-center">
-		{#if visible}
-			<p
-				in:fade={{ duration: 400 }}
-				out:fade={{ duration: 300 }}
-				class="font-['Playfair_Display'] text-2xl leading-snug text-s-sub-headline italic md:text-3xl"
-			>
-				{messages[activeIndex]}
-			</p>
-		{/if}
-	</div>
-</div>
+<LoadingState />
